@@ -33,7 +33,18 @@ export default function Home() {
   const [openRemove, setOpenRemove] = useState(false)
   const [backgroundImage, setBackgroundImage] = useState('lightblue')
 
-  
+  const [selectedPart, setSelectedPart] = useState(null)
+  const [shippingOptionsOpen, setShippingOptionsOpen] = useState(false)
+
+  //temp function for search tab info
+  const getShippingOptions = (partName) => {
+  return [
+    { vendor: 'FedEx', price: '$5.00', quantity: 2, quality: 'High' },
+    { vendor: 'UPS', price: '$3.50', quantity: 5, quality: 'Medium' },
+    { vendor: 'DHL', price: '$4.00', quantity: 3, quality: 'High' },
+  ]
+  }
+
   const updatePhotos = async () => {
     const snapshot = query(collection(firestore, 'photos'))
     const docs = await getDocs(snapshot)
@@ -177,6 +188,15 @@ export default function Home() {
       justifyContent = "center" 
       alignItems = "center"
       gap = {2}
+      sx={{
+      backgroundColor: '#fefefe',
+      border: '1px solid #ddd',
+      borderRadius: '12px',
+      padding: 2,
+      display: 'flex',
+      alignItems: 'center',
+      boxShadow: 2,
+    }}
     //   style = {{
     //     backgroundImage: 'url(https://www.parcelandpostaltechnologyinternational.com/wp-content/uploads/2023/12/Dematic_Radial-2-1200x800.jpg)',
     //     backgroundSize: 'cover',
@@ -348,6 +368,46 @@ export default function Home() {
         </Box>
       </Modal>
       
+
+      {/* search tab modal */}
+      <Modal open={shippingOptionsOpen} onClose={() => setShippingOptionsOpen(false)}>
+  <Box
+    sx={{
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: 500,
+      bgcolor: 'white',
+      boxShadow: 24,
+      borderRadius: 4,
+      p: 4,
+    }}
+  >
+    <Typography variant="h6" mb={2} sx={{ color: '#003366' }}>
+      Shipping Options for <strong>{selectedPart}</strong>
+    </Typography>
+    <Stack spacing={2}>
+      {getShippingOptions(selectedPart).map((opt, idx) => (
+        <Box
+          key={idx}
+          sx={{
+            border: '1px solid #ccc',
+            borderRadius: 2,
+            p: 2,
+            backgroundColor: '#f9f9f9',
+          }}
+        >
+          <Typography><strong>Vendor:</strong> {opt.vendor}</Typography>
+          <Typography><strong>Price:</strong> {opt.price}</Typography>
+          <Typography><strong>Available Quantity:</strong> {opt.quantity}</Typography>
+          <Typography><strong>Quality:</strong> {opt.quality}</Typography>
+        </Box>
+      ))}
+    </Stack>
+  </Box>
+</Modal>
+      
       <Box 
         width = "800px" 
         height = "100px" 
@@ -356,7 +416,7 @@ export default function Home() {
         alignItems= "center"
         justifyContent = "center">
           <Typography variant = "h2" color = "#FFF01F">
-            Warehouse Search
+            Search
           </Typography>
       </Box>
       <Stack
@@ -366,11 +426,11 @@ export default function Home() {
         direction = "row"
         spacing = {20}
       >
-        <Button variant = "contained" style ={{backgroundColor: "#3DB541"}} onClick = {()=>{
+        {/* <Button variant = "contained" style ={{backgroundColor: "#3DB541"}} onClick = {()=>{
           handleOpen()
         }}>
           Add New Item
-        </Button>
+        </Button> */}
         
         {/* <Button onClick = {() =>{
           {openCamera()}
@@ -385,28 +445,35 @@ export default function Home() {
         <Button onClick={handlePhotoTaken}>Take Photo</Button></div>)} */}
         
 
-        <Button variant = "contained" onClick = {()=>{
+        {/* <Button variant = "contained" onClick = {()=>{
           handleRemoveOpen()
         }}>
           Remove All
-        </Button>
+        </Button> */}
 
       </Stack>
       
       <Box width = "500px" height = "auto">
       <Form>
-        <InputGroup>
-          <Form.Control 
-            onChange = {(e)=> setSearch(e.target.value)}
-            placeholder = "Search for a part"
-            />
+        <InputGroup style={{ width: '400px' }}>
+          <Form.Control
+            placeholder="Search for a part"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              borderRadius: '12px',
+              padding: '12px',
+              fontSize: '16px',
+              borderColor: '#ccc',
+            }}
+          />
         </InputGroup>
       </Form>
       </Box>
       
       <Box border = "3px solid #cfc46d" 
       width = "1200px" 
-      height = "auto"
+      height = "600px"
 
       style = {{
         backgroundImage: 'url(https://tse2.mm.bing.net/th/id/OIP.9tXWOz32JObN3aVicx731gHaEV?r=0&rs=1&pid=ImgDetMain&o=7&rm=3)',
@@ -434,112 +501,113 @@ export default function Home() {
               fontFamily= "Verdana"
               fontWeight = "450"
               
-          >items</Typography>
+          >Part No.</Typography>
           </Box>
-          <Box
-          display = "flex"
-          alignItems = "center"
-          justifyContent="center"
-          margin="0 auto"
-          >
-          <Typography 
-              variance = "h3" 
-              color = "black" 
-              textAlign="center"
-              fontSize = "25px"
-              fontFamily= "Verdana"
-              fontWeight = "450"
-              marginLeft="-200px"
-          >amount</Typography>
-        
 
-        </Box>
         </Stack>
       <Stack 
-      width = "1100px" 
-      height = "300px" 
+      width = "1190px" 
+      height = "470px" 
       spacing = {2} 
       overflow = "auto" //how to see extra items, can hide with "hidden"
       
       >
         
         {
-          inventory.filter((item)=>{ //search
-            return search.toLowerCase() === '' ? item : item.name.toLowerCase().includes(search)
-          }).map(({name, quantity})=>(
-            <Box 
-            key = {name}
-            width = "100%"
-            minHeight = "150px"
-            display = "flex"
-            alignItems = "center"
-            justifyContent = "space-between"
-            padding = {3}
-            
-            >
-              <Typography 
-              variance = "h3" 
-              color = "#061201" 
-              textAlign="center"
-              style = {{
-                fontFamily: "Verdana",
-                fontWeight: "450",
-                fontSize: "35px",
-              }}
-              
-              >
-                {name.charAt(0).toUpperCase() + name.slice(1)}
-              </Typography>
+          inventory
+  .filter(item =>
+    search.toLowerCase() === '' ? item : item.name.toLowerCase().includes(search.toLowerCase())
+  )
+  .map(({ name, description, quantity }) => (
+    <Box
+      key={name}
+      sx={{
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        p: 3,
+        boxShadow: 3,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        '&:hover': {
+          boxShadow: 6,
+          backgroundColor: '#f5faff',
+          transform: 'scale(1.01)',
+          transition: '0.3s',
+        },
+      }}
+    >
+      {/* Header Row */}
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Typography
+          onClick={() => {
+            setSelectedPart(name)
+            setShippingOptionsOpen(true)
+          }}
+          sx={{
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#003366',
+            cursor: 'pointer',
+            textDecoration: 'underline',
+            fontFamily: 'Roboto, sans-serif',
+          }}
+        >
+          {name.charAt(0).toUpperCase() + name.slice(1)}
+        </Typography>
 
-              <Typography 
-              variance = "h3" 
-              color = "#061201" 
-              textAlign="center"
-              style = {{
-                fontFamily: "Verdana",
-                fontWeight: "450",
-                fontSize: "35px",
-              }}
-              >
-                {quantity}
-              </Typography>
-              <Stack direction = "row" spacing = {2}>
-              <Button 
-              variant = "contained"
-              style ={{
-                //backgroundColor: "#3DB541",
-                backgroundColor: "transparent",
-                color: "#3DB541",
-                fontFamily: "Courier New",
-                border: "2px outset #3DB541",
-                fontWeight: "900"
-              }}
-              onClick = {() =>{
-                addItem(name)
-              }}>
-                Add
-              </Button>
+        <Typography
+          sx={{
+            fontSize: '18px',
+            fontWeight: 500,
+            color: '#555',
+            fontFamily: 'Roboto, sans-serif',
+          }}
+        >
+          Quantity: {quantity}
+        </Typography>
+      </Stack>
 
-              <Button 
-              variant = "contained"
-              style = {{
-                //backgroundColor: "#E2574D"
-                backgroundColor: "transparent",
-                color: "#ed0d2d",
-                fontFamily: "Courier New",
-                border: "2px outset #ed0d2d",
-                fontWeight: "900"
+      {/* Description */}
+      <Typography
+        sx={{
+          fontSize: '16px',
+          color: '#777',
+          fontFamily: 'Roboto, sans-serif',
+        }}
+      >
+        {description || 'No description available.'}
+      </Typography>
 
-              }}
-              onClick = {() =>{
-                removeItem(name)
-              }}>
-                Remove
-              </Button>
-              </Stack>
-            </Box>
-          ))
-        }
+      {/* Action Buttons */}
+      <Stack direction="row" spacing={2}>
+        {/* <Button
+          variant="contained"
+          sx={{
+            backgroundColor: '#28A745',
+            fontWeight: 'bold',
+            fontFamily: 'Roboto, sans-serif',
+            '&:hover': { backgroundColor: '#218838' },
+          }}
+          onClick={() => addItem(name)}
+        >
+          Add
+        </Button>
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: '#DC3545',
+            fontWeight: 'bold',
+            fontFamily: 'Roboto, sans-serif',
+            '&:hover': { backgroundColor: '#c82333' },
+          }}
+          onClick={() => removeItem(name)}
+        >
+          Remove
+        </Button> */}
+      </Stack>
+    </Box>
+  ))}
 
       </Stack>
       </Box>

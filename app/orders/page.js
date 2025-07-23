@@ -78,7 +78,7 @@ export default function OrdersPage() {
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>Active Shipments</Typography>
+          <Typography variant="h6" gutterBottom>Shipments</Typography>
           <Card>
             <List>
               {activeShipments.map((s, i) => (
