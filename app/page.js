@@ -8,20 +8,20 @@ export default function HomePage() {
       height = "100vh" 
       display = "flex" 
       flexDirection="column"
-      justifyContent = "center" 
-      alignItems = "center"
-      gap = {2}
+      justifyContent = "flex-end" 
+      alignItems = "flex-start"
       style = {{
-        backgroundImage: 'url(https://www.parcelandpostaltechnologyinternational.com/wp-content/uploads/2023/12/Dematic_Radial-2-1200x800.jpg)',
+        backgroundImage: 'url(/home.jpg)',
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
       }}
+      sx={{ position: 'relative', p: { xs: 3, sm: 6 } }}
     >
-      <Box textAlign="center">
-      <Typography variant="h2" color = "#FFF01F">Dematic Warehouse App</Typography>
-      {/* <Typography variant="subtitle1" mt={2}>
-        HOME
-      </Typography> */}
+      <Box textAlign="left" sx={{ mb: 10, ml: 1 }}>
+        <Typography variant="h2" sx={{ color: '#fff', fontWeight: 800, textShadow: '0 2px 16px rgba(0,0,0,0.25)', lineHeight: 1.1 }}>
+          Dematic<br />Warehouse App
+        </Typography>
       </Box>
     </Box>
     
