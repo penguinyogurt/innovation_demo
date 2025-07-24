@@ -18,7 +18,7 @@ export default function HomePage() {
       }}
     >
       <Box textAlign="center">
-      <Typography variant="h2" color = "#FFF01F">📦 Dematic Warehouse App</Typography>
+      <Typography variant="h2" color = "#FFF01F">Dematic Warehouse App</Typography>
       {/* <Typography variant="subtitle1" mt={2}>
         HOME
       </Typography> */}
