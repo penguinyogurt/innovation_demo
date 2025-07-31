@@ -3,20 +3,87 @@
 import { useState, useEffect } from 'react'
 import { firestore } from '@/firebase'
 import { collection, getDocs } from 'firebase/firestore'
-import { Box, Typography, Stack, TextField, Button, InputAdornment, Paper, IconButton, Modal } from '@mui/material'
-import { Home, Search, Inventory2, Close as CloseIcon } from '@mui/icons-material'
+import { Box, Typography, Stack, TextField, Button, InputAdornment, Paper, IconButton, Modal, Alert, Chip } from '@mui/material'
+import { Home, Search, Inventory2, Close as CloseIcon, Upload, FileUpload } from '@mui/icons-material'
 
 export default function InventoryPage() {
   const [inventory, setInventory] = useState([])
   const [search, setSearch] = useState('')
   const [shippingOptionsOpen, setShippingOptionsOpen] = useState(false)
   const [selectedPart, setSelectedPart] = useState(null)
+  const [csvParts, setCsvParts] = useState([])
+  const [csvError, setCsvError] = useState('')
+  const [showCsvResults, setShowCsvResults] = useState(false)
 
   const getShippingOptions = (partName) => [
     { vendor: 'FedEx', price: '$5.00', quantity: 2, quality: 'High' },
     { vendor: 'UPS', price: '$3.50', quantity: 5, quality: 'Medium' },
     { vendor: 'DHL', price: '$4.00', quantity: 3, quality: 'High' },
   ];
+
+  const handleCsvUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Reset states
+    setCsvError('');
+    setCsvParts([]);
+    setShowCsvResults(false);
+
+    // Validate file type
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+      setCsvError('Please upload a valid CSV file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvText = e.target.result;
+        const lines = csvText.split('\n');
+        const parts = [];
+        
+        // Process each line - each line should be a part number
+        lines.forEach((line) => {
+          const trimmedLine = line.trim();
+          if (trimmedLine) { // Skip empty lines
+            const partNumber = trimmedLine.split(',')[0]?.trim(); // Get first column as part number
+            if (partNumber) {
+              parts.push(partNumber);
+            }
+          }
+        });
+
+        if (parts.length === 0) {
+          setCsvError('No valid part numbers found in CSV file');
+          return;
+        }
+
+        setCsvParts(parts);
+        setShowCsvResults(true);
+        setSearch(''); // Clear text search when CSV is uploaded
+      } catch (error) {
+        setCsvError('Error processing CSV file. Please check the format.');
+      }
+    };
+
+    reader.onerror = () => {
+      setCsvError('Error reading file');
+    };
+
+    reader.readAsText(file);
+  };
+
+  const clearCsvResults = () => {
+    setCsvParts([]);
+    setShowCsvResults(false);
+    setCsvError('');
+    // Clear the file input value to allow re-uploading the same file
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
 
   const updateInventory = async () => {
     const snapshot = collection(firestore, 'inventory')
@@ -34,6 +101,14 @@ export default function InventoryPage() {
   useEffect(() => {
     updateInventory()
   }, [])
+
+  // Filter inventory based on search or CSV parts
+  const filteredInventory = inventory.filter(item => {
+    if (showCsvResults && csvParts.length > 0) {
+      return csvParts.some(part => item.name.toLowerCase().includes(part.toLowerCase()));
+    }
+    return search.trim() === '' ? true : item.name.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <Box minHeight="100vh" bgcolor="#fafbfc" p={4} display="flex" justifyContent="center" alignItems="flex-start">
@@ -55,21 +130,84 @@ export default function InventoryPage() {
           </Typography>
         </Stack>
 
-        {/* Search Bar */}
-        <Paper elevation={1} sx={{ maxWidth: 400, mb: 3, borderRadius: 3, p: 0.5, pl: 2, display: 'flex', alignItems: 'center' }}>
-          <Search sx={{ color: '#b0b0b0', mr: 1 }} />
-          <TextField
-            variant="standard"
-            placeholder="Search for an item..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            InputProps={{ disableUnderline: true }}
-            sx={{ flex: 1, fontSize: 18 }}
-          />
-          <IconButton disabled>
-            <Search />
-          </IconButton>
-        </Paper>
+        {/* Search Section */}
+        <Box mb={3}>
+          {/* Search Bar with CSV Upload */}
+          <Paper elevation={1} sx={{ maxWidth: 400, borderRadius: 3, p: 0.5, pl: 2, display: 'flex', alignItems: 'center' }}>
+            <Search sx={{ color: '#b0b0b0', mr: 1 }} />
+            <TextField
+              variant="standard"
+              placeholder="Search for an item..."
+              value={search}
+              onChange={e => {
+                setSearch(e.target.value);
+                if (e.target.value.trim() !== '') {
+                  clearCsvResults(); // Clear CSV results when text search is used
+                }
+              }}
+              InputProps={{ disableUnderline: true }}
+              sx={{ flex: 1, fontSize: 18 }}
+            />
+            <IconButton
+              component="label"
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                color: '#666',
+                '&:hover': { bgcolor: 'rgba(102, 102, 102, 0.04)' }
+              }}
+            >
+              <FileUpload sx={{ fontSize: 20 }} />
+              <input
+                type="file"
+                hidden
+                accept=".csv"
+                onChange={handleCsvUpload}
+              />
+            </IconButton>
+            <IconButton disabled>
+              <Search />
+            </IconButton>
+          </Paper>
+
+          {/* CSV Results Display */}
+          {csvError && (
+            <Alert severity="error" sx={{ mt: 2, maxWidth: 400 }}>
+              {csvError}
+            </Alert>
+          )}
+
+          {showCsvResults && csvParts.length > 0 && (
+            <Box mt={2} maxWidth={400}>
+              <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                <Typography variant="body2" color="text.secondary">
+                  Searching for {csvParts.length} part(s):
+                </Typography>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={clearCsvResults}
+                  sx={{ color: '#666', minWidth: 'auto', p: 0.5 }}
+                >
+                  Clear
+                </Button>
+              </Stack>
+              <Box display="flex" flexWrap="wrap" gap={1}>
+                {csvParts.map((part, index) => (
+                  <Chip
+                    key={index}
+                    label={part}
+                    size="small"
+                    sx={{ bgcolor: '#e3f2fd', color: '#1976d2' }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+
 
         {/* Table Header */}
         <Box
@@ -104,11 +242,25 @@ export default function InventoryPage() {
             overflow: 'hidden',
           }}
         >
-          {inventory
-            .filter(item =>
-              search.trim() === '' ? true : item.name.toLowerCase().includes(search.toLowerCase())
-            )
-            .map(({ name, description, quantity }, idx, arr) => (
+          {filteredInventory.length === 0 ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 3,
+                py: 4,
+                fontSize: 16,
+                color: '#666',
+              }}
+            >
+              {showCsvResults && csvParts.length > 0 
+                ? 'No inventory items found matching the uploaded CSV parts.'
+                : 'No inventory items found matching your search.'
+              }
+            </Box>
+          ) : (
+            filteredInventory.map(({ name, description, quantity }, idx, arr) => (
               <Box
                 key={name}
                 sx={{
@@ -144,7 +296,8 @@ export default function InventoryPage() {
                   </Button>
                 </Box>
               </Box>
-            ))}
+            ))
+          )}
         </Box>
       </Box>
       {/* Shipping Options Modal */}
